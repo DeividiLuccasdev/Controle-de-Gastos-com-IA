@@ -1,0 +1,49 @@
+# Dependências
+node_modules/
+
+# Variáveis de ambiente e segredos
+.env
+.env.*
+!.env.example
+backend/.env
+frontend/.env
+frontend/.env.local
+
+# Next.js
+.next/
+out/
+
+# Build
+dist/
+build/
+
+# Uploads locais
+uploads/
+backend/uploads/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema/IDE
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Android
+android/.gradle/
+android/app/build/
+
+# Ferramentas / IDE
+.agents/
+.claude/
+.windsurf/
+.idea/
+AGENTS.md
+CLAUDE.md
+
+# Prisma gerado
+backend/src/generated/
+
+# Arquivos temporários
+backend/erro.txt

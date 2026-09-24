@@ -1,0 +1,49 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "cjs"
+  importFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Usuario {
+  id           Int      @id @default(autoincrement())
+  nome         String
+  email        String   @unique
+  senha        String
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  gastos Gasto[]
+}
+
+model Gasto {
+  id              Int       @id @default(autoincrement())
+  estabelecimento String?
+  total           Decimal   @db.Decimal(10, 2)
+  categoria       String?
+  dataCompra      DateTime?
+  imagemUrl       String?
+  criadoEm        DateTime  @default(now())
+  atualizadoEm    DateTime  @updatedAt
+
+  usuarioId Int
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  itens ItemGasto[]
+}
+
+model ItemGasto {
+  id            Int      @id @default(autoincrement())
+  produto       String
+  quantidade    Int      @default(1)
+  valorUnitario Decimal  @db.Decimal(10, 2)
+  valorTotal    Decimal? @db.Decimal(10, 2)
+  criadoEm      DateTime @default(now())
+
+  gastoId Int
+  gasto   Gasto @relation(fields: [gastoId], references: [id], onDelete: Cascade)
+}
