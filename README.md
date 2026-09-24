@@ -162,11 +162,17 @@ O projeto foi testado em smartphone Android conectado à mesma rede do computado
 
 ## 📸 Screenshots
 
-As imagens demonstrativas da aplicação serão adicionadas à pasta:
+### Login
 
-```text
-/screenshots
-```
+<img src="screenshots/login.png" width="300">
+
+### Dashboard
+
+<img src="screenshots/dashboard.png" width="300">
+
+### Análise do comprovante com IA
+
+<img src="screenshots/analise-comprovante.png" width="300">
 
 ## 🎯 Objetivo
 
