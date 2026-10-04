@@ -156,6 +156,19 @@ Frontend:
 http://localhost:3000
 ```
 
+## 🧪 Testes
+
+```bash
+cd backend
+npm test
+```
+
+## 🔐 Segurança dos comprovantes
+
+- Só imagens de verdade são aceitas: o arquivo é validado e convertido para JPEG pelo Sharp, o que também remove metadados como a localização GPS.
+- Cada usuário tem a própria pasta em `uploads/` e só acessa e analisa os próprios comprovantes.
+- As imagens exigem login para serem baixadas.
+
 ## 📱 Teste em celular
 
 O projeto foi testado em smartphone Android conectado à mesma rede do computador, permitindo fotografar comprovantes diretamente pelo aparelho.

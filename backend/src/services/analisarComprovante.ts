@@ -2,6 +2,12 @@ import { GoogleGenAI } from "@google/genai";
 import fs from "fs/promises";
 import sharp from "sharp";
 
+import {
+  normalizarData,
+  normalizarNumero,
+  normalizarQuantidade
+} from "../utils/numeros";
+
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY
 });
@@ -26,25 +32,6 @@ function limparJson(texto: string): string {
     .replace(/```json/g, "")
     .replace(/```/g, "")
     .trim();
-}
-
-function normalizarNumero(valor: unknown): number {
-  if (typeof valor === "number") {
-    return valor;
-  }
-
-  if (typeof valor === "string") {
-    const convertido = Number(
-      valor
-        .replace(/\./g, "")
-        .replace(",", ".")
-        .trim()
-    );
-
-    return Number.isNaN(convertido) ? 0 : convertido;
-  }
-
-  return 0;
 }
 
 export async function analisarComprovante(
@@ -125,7 +112,7 @@ Regras:
 
   const resultado: ResultadoComprovante = {
     estabelecimento: bruto.estabelecimento ?? null,
-    dataCompra: bruto.dataCompra ?? null,
+    dataCompra: normalizarData(bruto.dataCompra),
     total:
       bruto.total === null || bruto.total === undefined
         ? null
@@ -134,7 +121,7 @@ Regras:
     itens: Array.isArray(bruto.itens)
       ? bruto.itens.map((item: any) => ({
           produto: String(item?.produto ?? ""),
-          quantidade: Number(item?.quantidade ?? 0),
+          quantidade: normalizarQuantidade(item?.quantidade),
           valorUnitario: normalizarNumero(item?.valorUnitario),
           valorTotal: normalizarNumero(item?.valorTotal)
         }))

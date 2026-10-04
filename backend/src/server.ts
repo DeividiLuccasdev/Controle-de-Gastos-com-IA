@@ -6,7 +6,7 @@ import { prisma } from "./config/prisma";
 import usuariosRoutes from "./routes/usuarios";
 import authRoutes from "./routes/auth";
 import gastosRoutes from "./routes/gastos";
-import path from "path";
+import uploadsRoutes from "./routes/uploads";
 
 dotenv.config();
 
@@ -15,10 +15,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use(
-  "/uploads",
-  express.static(path.resolve("uploads"))
-);
+app.use("/uploads", uploadsRoutes);
 
 app.use("/usuarios", usuariosRoutes);
 app.use("/auth", authRoutes);

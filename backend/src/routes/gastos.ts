@@ -1,8 +1,14 @@
-import path from "path";
-import { Response, Router } from "express";
+import fs from "fs";
+import { NextFunction, Request, Response, Router } from "express";
+import multer from "multer";
 
 import { prisma } from "../config/prisma";
-import { upload } from "../config/upload";
+import {
+  ImagemInvalidaError,
+  resolverImagem,
+  salvarImagem,
+  upload
+} from "../config/upload";
 import { analisarComprovante } from "../services/analisarComprovante";
 
 import {
@@ -11,6 +17,37 @@ import {
 } from "../middlewares/autenticacao";
 
 const router = Router();
+
+// Recebe o arquivo "comprovante" e responde 400 (em JSON) para
+// arquivo grande demais ou formato não permitido.
+function receberComprovante(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  upload.single("comprovante")(req, res, (erro: unknown) => {
+    if (!erro) {
+      return next();
+    }
+
+    const mensagem =
+      erro instanceof multer.MulterError && erro.code === "LIMIT_FILE_SIZE"
+        ? "A imagem deve ter no máximo 10 MB."
+        : erro instanceof Error
+          ? erro.message
+          : "Erro ao receber o arquivo.";
+
+    return res.status(400).json({ mensagem });
+  });
+}
+
+// Caminho da imagem do usuário, ou null se o imagemUrl for inválido,
+// de outro usuário ou se o arquivo não existir.
+function caminhoDaImagem(imagemUrl: unknown, usuarioId: number) {
+  const caminho = resolverImagem(imagemUrl, usuarioId);
+
+  return caminho && fs.existsSync(caminho) ? caminho : null;
+}
 
 router.get("/", autenticar, async (req: AuthRequest, res: Response) => {
   try {
@@ -70,13 +107,19 @@ router.post("/", autenticar, async (req: AuthRequest, res: Response) => {
       });
     }
 
+    if (imagemUrl && !caminhoDaImagem(imagemUrl, usuarioId)) {
+      return res.status(400).json({
+        mensagem: "Imagem inválida."
+      });
+    }
+
     const gasto = await prisma.gasto.create({
       data: {
         estabelecimento,
         total,
         categoria,
         dataCompra: dataCompra ? new Date(dataCompra) : null,
-        imagemUrl,
+        imagemUrl: imagemUrl || null,
         usuarioId,
 
         itens: {
@@ -116,24 +159,38 @@ router.post("/", autenticar, async (req: AuthRequest, res: Response) => {
 router.post(
   "/foto",
   autenticar,
-  upload.single("comprovante"),
+  receberComprovante,
   async (req: AuthRequest, res: Response) => {
     try {
+      const usuarioId = req.usuarioId;
+
+      if (!usuarioId) {
+        return res.status(401).json({
+          mensagem: "Usuário não autenticado."
+        });
+      }
+
       if (!req.file) {
         return res.status(400).json({
           mensagem: "Nenhuma imagem foi enviada."
         });
       }
 
-      const imagemUrl = `/uploads/${req.file.filename}`;
+      const imagemUrl = await salvarImagem(req.file.buffer, usuarioId);
 
       return res.status(201).json({
         mensagem: "Comprovante enviado com sucesso.",
         imagemUrl,
-        arquivo: req.file.filename
+        arquivo: imagemUrl.split("/").pop()
       });
 
     } catch (error) {
+      if (error instanceof ImagemInvalidaError) {
+        return res.status(400).json({
+          mensagem: error.message
+        });
+      }
+
       console.error("ERRO NO UPLOAD:", error);
 
       return res.status(500).json({
@@ -148,7 +205,14 @@ router.post(
   autenticar,
   async (req: AuthRequest, res: Response) => {
     try {
-      const { imagemUrl } = req.body;
+      const usuarioId = req.usuarioId;
+      const { imagemUrl } = req.body ?? {};
+
+      if (!usuarioId) {
+        return res.status(401).json({
+          mensagem: "Usuário não autenticado."
+        });
+      }
 
       if (!imagemUrl) {
         return res.status(400).json({
@@ -156,11 +220,13 @@ router.post(
         });
       }
 
-      const caminhoRelativo = imagemUrl.startsWith("/")
-        ? imagemUrl.slice(1)
-        : imagemUrl;
+      const caminhoArquivo = caminhoDaImagem(imagemUrl, usuarioId);
 
-      const caminhoArquivo = path.resolve(caminhoRelativo);
+      if (!caminhoArquivo) {
+        return res.status(400).json({
+          mensagem: "Imagem inválida."
+        });
+      }
 
       const dadosExtraidos =
         await analisarComprovante(caminhoArquivo);
@@ -192,7 +258,7 @@ router.post(
   async (req: AuthRequest, res: Response) => {
     try {
       const usuarioId = req.usuarioId;
-      const { imagemUrl } = req.body;
+      const { imagemUrl } = req.body ?? {};
 
       if (!usuarioId) {
         return res.status(401).json({
@@ -206,14 +272,13 @@ router.post(
         });
       }
 
-      if (!imagemUrl.startsWith("/uploads/")) {
+      const caminhoArquivo = caminhoDaImagem(imagemUrl, usuarioId);
+
+      if (!caminhoArquivo) {
         return res.status(400).json({
           mensagem: "Imagem inválida."
         });
       }
-
-      const caminhoRelativo = imagemUrl.slice(1);
-      const caminhoArquivo = path.resolve(caminhoRelativo);
 
       const dados = await analisarComprovante(caminhoArquivo);
 
