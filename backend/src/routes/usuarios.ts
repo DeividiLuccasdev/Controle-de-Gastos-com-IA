@@ -14,6 +14,12 @@ router.post("/", async (req, res) => {
       });
     }
 
+    if (String(senha).length < 6) {
+      return res.status(400).json({
+        mensagem: "A senha deve ter pelo menos 6 caracteres."
+      });
+    }
+
     const usuarioExistente = await prisma.usuario.findUnique({
       where: {
         email
