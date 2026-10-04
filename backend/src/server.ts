@@ -6,7 +6,7 @@ import { prisma } from "./config/prisma";
 import usuariosRoutes from "./routes/usuarios";
 import authRoutes from "./routes/auth";
 import gastosRoutes from "./routes/gastos";
-import path from "path";
+import uploadsRoutes from "./routes/uploads";
 
 dotenv.config();
 
@@ -15,17 +15,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use(
-  "/uploads",
-  express.static(path.resolve("uploads"))
-);
+app.use("/uploads", uploadsRoutes);
 
 app.use("/usuarios", usuariosRoutes);
 app.use("/auth", authRoutes);
 app.use("/gastos", gastosRoutes);
 app.get("/", (req, res) => {
   return res.json({
-    aplicacao: "Gasto na Foto",
+    aplicacao: "Controle de Gastos com IA",
     status: "online",
     mensagem: "API funcionando 🚀"
   });
@@ -53,5 +50,5 @@ app.get("/teste-banco", async (req, res) => {
 const PORT = Number(process.env.PORT) || 3001;
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Gasto na Foto rodando na porta ${PORT}`);
+  console.log(`🚀 Controle de Gastos com IA rodando na porta ${PORT}`);
 });

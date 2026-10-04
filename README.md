@@ -1,4 +1,4 @@
-# 📸 Gasto na Foto
+# 📸 Controle de Gastos com IA
 
 Aplicação Full Stack para controle de gastos por meio de fotografias de comprovantes e notas fiscais.
 
@@ -155,6 +155,19 @@ Frontend:
 ```text
 http://localhost:3000
 ```
+
+## 🧪 Testes
+
+```bash
+cd backend
+npm test
+```
+
+## 🔐 Segurança dos comprovantes
+
+- Só imagens de verdade são aceitas: o arquivo é validado e convertido para JPEG pelo Sharp, o que também remove metadados como a localização GPS.
+- Cada usuário tem a própria pasta em `uploads/` e só acessa e analisa os próprios comprovantes.
+- As imagens exigem login para serem baixadas.
 
 ## 📱 Teste em celular
 

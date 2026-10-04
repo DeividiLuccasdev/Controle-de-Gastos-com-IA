@@ -493,7 +493,7 @@ export default function HomePage() {
 
               <div>
                 <h1 className="text-2xl font-bold">
-                  Gasto na Foto
+                  Controle de Gastos com IA
                 </h1>
 
                 <p className="text-sm text-slate-500">

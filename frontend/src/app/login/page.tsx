@@ -71,7 +71,7 @@ export default function LoginPage() {
           </div>
 
           <h1 className="mt-4 text-3xl font-bold text-slate-900">
-            Gasto na Foto
+            Controle de Gastos com IA
           </h1>
 
           <p className="mt-2 text-slate-500">
