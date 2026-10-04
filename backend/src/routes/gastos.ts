@@ -9,7 +9,10 @@ import {
   salvarImagem,
   upload
 } from "../config/upload";
-import { analisarComprovante } from "../services/analisarComprovante";
+import {
+  analisarComprovante,
+  IAIndisponivel
+} from "../services/analisarComprovante";
 
 import {
   autenticar,
@@ -237,6 +240,12 @@ router.post(
       });
 
     } catch (error) {
+      if (error instanceof IAIndisponivel) {
+        return res.status(503).json({
+          mensagem: error.message
+        });
+      }
+
       console.error(
         "ERRO AO ANALISAR COMPROVANTE:",
         error
@@ -323,6 +332,12 @@ router.post(
       });
 
     } catch (error) {
+      if (error instanceof IAIndisponivel) {
+        return res.status(503).json({
+          mensagem: error.message
+        });
+      }
+
       console.error(
         "ERRO AO ANALISAR E SALVAR:",
         error
