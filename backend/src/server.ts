@@ -25,7 +25,7 @@ app.use("/auth", authRoutes);
 app.use("/gastos", gastosRoutes);
 app.get("/", (req, res) => {
   return res.json({
-    aplicacao: "Gasto na Foto",
+    aplicacao: "Controle de Gastos com IA",
     status: "online",
     mensagem: "API funcionando 🚀"
   });
@@ -53,5 +53,5 @@ app.get("/teste-banco", async (req, res) => {
 const PORT = Number(process.env.PORT) || 3001;
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Gasto na Foto rodando na porta ${PORT}`);
+  console.log(`🚀 Controle de Gastos com IA rodando na porta ${PORT}`);
 });

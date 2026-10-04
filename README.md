@@ -1,4 +1,4 @@
-# 📸 Gasto na Foto
+# 📸 Controle de Gastos com IA
 
 Aplicação Full Stack para controle de gastos por meio de fotografias de comprovantes e notas fiscais.
 
