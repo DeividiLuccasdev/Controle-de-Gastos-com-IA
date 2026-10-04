@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
 import fs from "fs/promises";
 import sharp from "sharp";
 
@@ -8,8 +8,9 @@ import {
   normalizarQuantidade
 } from "../utils/numeros";
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY
+const ai = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY,
+  baseURL: "https://api.groq.com/openai/v1"
 });
 
 type ItemExtraido = {
@@ -37,13 +38,12 @@ function limparJson(texto: string): string {
 export async function analisarComprovante(
   caminhoArquivo: string
 ): Promise<ResultadoComprovante> {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY não configurada.");
+  if (!process.env.GROQ_API_KEY) {
+    throw new Error("GROQ_API_KEY não configurada.");
   }
 
   const arquivoOriginal = await fs.readFile(caminhoArquivo);
 
-  // Converte AVIF, PNG, WEBP etc. para JPEG padrão
   const jpegBuffer = await sharp(arquivoOriginal)
     .rotate()
     .jpeg({
@@ -53,12 +53,15 @@ export async function analisarComprovante(
 
   const base64 = jpegBuffer.toString("base64");
 
-  const resposta = await ai.interactions.create({
-    model: "gemini-3.8-flash",
+  const resposta = await ai.responses.create({
+    model: "qwen/qwen3.8-27b",
     input: [
       {
-        type: "text",
-        text: `
+        role: "user",
+        content: [
+          {
+            type: "input_text",
+            text: `
 Analise esta imagem de um comprovante ou nota fiscal.
 
 Retorne APENAS um JSON válido.
@@ -93,11 +96,13 @@ Regras:
 - Se não conseguir identificar os produtos com segurança, retorne "itens": [].
 - A dataCompra deve ser retornada no formato YYYY-MM-DD.
 `
-      },
-      {
-        type: "image",
-        data: base64,
-        mime_type: "image/jpeg"
+          },
+          {
+            type: "input_image",
+            image_url: `data:image/jpeg;base64,${base64}`,
+            detail: "auto"
+          }
+        ]
       }
     ]
   });
@@ -110,7 +115,7 @@ Regras:
 
   const bruto = JSON.parse(texto) as Partial<ResultadoComprovante>;
 
-  const resultado: ResultadoComprovante = {
+  return {
     estabelecimento: bruto.estabelecimento ?? null,
     dataCompra: normalizarData(bruto.dataCompra),
     total:
@@ -127,6 +132,4 @@ Regras:
         }))
       : []
   };
-
-  return resultado;
 }
