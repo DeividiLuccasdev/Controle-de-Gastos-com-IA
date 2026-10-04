@@ -4,9 +4,13 @@ Aplicação Full Stack para controle de gastos por meio de fotografias de compro
 
 O usuário fotografa um comprovante pelo celular ou seleciona uma imagem. O backend processa a imagem e utiliza Inteligência Artificial com Google Gemini para identificar automaticamente estabelecimento, data, valor total, categoria e itens da compra.
 
+## ⏳ Sobre o primeiro acesso
+
+A versão online usa o plano gratuito do Render, que "adormece" o servidor após 15 minutos sem uso. **O primeiro acesso pode levar de 30 a 60 segundos** enquanto o servidor acorda; depois disso, a aplicação responde normalmente.
+
 ## 🚀 Funcionalidades
 
-- Autenticação de usuários
+- Cadastro e autenticação de usuários
 - Login com JWT
 - Upload de comprovantes
 - Captura de imagem pela câmera do celular
@@ -155,6 +159,26 @@ Frontend:
 ```text
 http://localhost:3000
 ```
+
+## ☁️ Publicando no Render
+
+O arquivo `render.yaml` cria a API e o site de uma vez:
+
+1. Crie um banco PostgreSQL (por exemplo, no [Neon](https://neon.tech)) e copie a connection string.
+2. No Render, clique em **New → Blueprint** e escolha este repositório.
+3. Informe as variáveis que o Render pedir:
+   - `DATABASE_URL`: a connection string do banco
+   - `GEMINI_API_KEY`: sua chave do Google AI Studio
+   - `NEXT_PUBLIC_API_URL`: o endereço da API (ex.: `https://controle-gastos-ia-api.onrender.com`)
+4. As migrações do banco rodam sozinhas a cada deploy. A `JWT_SECRET` é gerada automaticamente.
+
+Variáveis do frontend:
+
+| Variável | Descrição |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | Endereço da API usado no build. Sem ela, o frontend usa a porta 3001 do mesmo computador (útil para testar no celular pela rede local) |
+
+> No plano gratuito, os arquivos enviados ficam no disco temporário do servidor: os dados dos gastos ficam salvos no banco, mas as imagens dos comprovantes são apagadas quando o servidor reinicia.
 
 ## 🧪 Testes
 

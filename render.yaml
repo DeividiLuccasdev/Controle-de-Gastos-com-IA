@@ -1,0 +1,38 @@
+# Blueprint do Render: cria a API e o site de uma vez.
+# No Render: New → Blueprint → escolha este repositório.
+# O banco PostgreSQL fica fora (ex.: Neon); informe a DATABASE_URL quando o Render pedir.
+services:
+  - type: web
+    name: controle-gastos-ia-api
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run migrate && npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+
+  - type: web
+    name: controle-gastos-ia
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: out
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /login
+        destination: /login/index.html
+      - type: rewrite
+        source: /cadastro
+        destination: /cadastro/index.html

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
+import { API_URL } from "@/lib/api";
 
 type Usuario = {
   id: number;
@@ -43,10 +44,6 @@ type Gasto = {
   itens: ItemGasto[];
 };
 
-const API_URL =
-  typeof window !== "undefined"
-    ? `http://${window.location.hostname}:3001`
-    : "http://localhost:3001";
 
 export default function HomePage() {
   const inputRef = useRef<HTMLInputElement>(null);

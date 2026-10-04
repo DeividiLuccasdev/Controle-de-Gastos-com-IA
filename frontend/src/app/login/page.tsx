@@ -1,11 +1,9 @@
 ﻿"use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
+import { API_URL } from "@/lib/api";
 
-const API_URL =
-  typeof window !== "undefined"
-    ? `http://${window.location.hostname}:3001`
-    : "http://localhost:3001";
 
 
 export default function LoginPage() {
@@ -144,7 +142,17 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-slate-400">
+        <p className="mt-6 text-center text-sm text-slate-600">
+          Ainda não tem conta?{" "}
+          <Link
+            href="/cadastro/"
+            className="font-semibold text-emerald-600 hover:text-emerald-700"
+          >
+            Criar conta
+          </Link>
+        </p>
+
+        <p className="mt-4 text-center text-xs text-slate-400">
           Controle seus gastos fotografando seus comprovantes.
         </p>
 

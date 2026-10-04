@@ -6,12 +6,17 @@
   "scripts": {
     "test": "tsx --test \"src/**/*.test.ts\"",
     "dev": "tsx watch src/server.ts",
-    "start": "tsx src/server.ts"
+    "start": "tsx src/server.ts",
+    "build": "prisma generate --config prisma7.config.ts",
+    "migrate": "prisma migrate deploy --config prisma7.config.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=22"
+  },
   "dependencies": {
     "@google/genai": "^2.24.0",
     "@prisma/adapter-pg": "^7.10.0",
