@@ -84,7 +84,7 @@ PostgreSQL
 ## 📂 Estrutura
 
 ```text
-gasto-na-foto/
+controle-gastos-ia/
 ├── backend/
 │   ├── prisma/
 │   └── src/
@@ -114,7 +114,7 @@ Exemplo:
 
 ```env
 GEMINI_API_KEY=sua_chave_aqui
-DATABASE_URL=postgresql://usuario:senha@localhost:5436/gasto_na_foto
+DATABASE_URL=postgresql://usuario:senha@localhost:5436/controle_gastos_ia
 JWT_SECRET=seu_segredo_aqui
 PORT=3001
 ```
