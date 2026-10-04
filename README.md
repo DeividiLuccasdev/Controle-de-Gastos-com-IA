@@ -1,12 +1,16 @@
 # 📸 Controle de Gastos com IA
 
+[![CI](https://github.com/DeividiLuccasdev/gasto-na-foto/actions/workflows/ci.yml/badge.svg)](https://github.com/DeividiLuccasdev/gasto-na-foto/actions/workflows/ci.yml)
+
 Aplicação Full Stack para controle de gastos por meio de fotografias de comprovantes e notas fiscais.
 
-O usuário fotografa um comprovante pelo celular ou seleciona uma imagem. O backend processa a imagem e utiliza Inteligência Artificial com Google Gemini para identificar automaticamente estabelecimento, data, valor total, categoria e itens da compra.
+O usuário fotografa um comprovante pelo celular ou seleciona uma imagem. O backend processa a imagem e utiliza Inteligência Artificial (modelo de visão Qwen, via Groq) para identificar automaticamente estabelecimento, data, valor total, categoria e itens da compra.
 
-## ⏳ Sobre o primeiro acesso
+## 🌐 Aplicação Online
 
-A versão online usa o plano gratuito do Render, que "adormece" o servidor após 15 minutos sem uso. **O primeiro acesso pode levar de 30 a 60 segundos** enquanto o servidor acorda; depois disso, a aplicação responde normalmente.
+[Acessar o Controle de Gastos com IA](https://controle-gastos-ia.onrender.com)
+
+> ⏳ **O primeiro acesso pode demorar de 30 a 60 segundos.** A aplicação usa o plano gratuito do Render, que "adormece" o servidor após 15 minutos sem uso. Depois que ele acorda, tudo responde normalmente.
 
 ## 🚀 Funcionalidades
 
@@ -15,7 +19,7 @@ A versão online usa o plano gratuito do Render, que "adormece" o servidor após
 - Upload de comprovantes
 - Captura de imagem pela câmera do celular
 - Tratamento de imagens com Sharp
-- Análise de comprovantes com Google Gemini
+- Análise de comprovantes com IA (Qwen via Groq)
 - Extração automática de estabelecimento, data, total, categoria e produtos
 - Cadastro dos gastos no PostgreSQL
 - Histórico de gastos
@@ -25,7 +29,7 @@ A versão online usa o plano gratuito do Render, que "adormece" o servidor após
 
 ## 🧠 Inteligência Artificial
 
-O sistema utiliza a API do Google Gemini para interpretar imagens de comprovantes e retornar dados estruturados em JSON.
+O sistema envia a imagem do comprovante a um modelo de visão (Qwen 3.8, pela API do [Groq](https://groq.com), compatível com a OpenAI) para interpretar imagens de comprovantes e retornar dados estruturados em JSON.
 
 ### Fluxo da aplicação
 
@@ -38,7 +42,7 @@ API Node.js / Express
         ↓
 Sharp
         ↓
-Google Gemini
+Groq (Qwen 3.8 Vision)
         ↓
 JSON estruturado
         ↓
@@ -70,7 +74,7 @@ PostgreSQL
 
 ### Inteligência Artificial
 
-- Google Gemini API
+- Groq API (modelo Qwen 3.8 com visão)
 - Google GenAI SDK
 
 ### Banco de Dados
@@ -117,15 +121,13 @@ As chaves e credenciais reais não são armazenadas no GitHub.
 Exemplo:
 
 ```env
-GEMINI_API_KEY=sua_chave_aqui
+GROQ_API_KEY=sua_chave_groq
 DATABASE_URL=postgresql://usuario:senha@localhost:5436/controle_gastos_ia
 JWT_SECRET=seu_segredo_aqui
 PORT=3001
 ```
 
 ## ⚙️ Como executar
-
-link = https://controle-gastos-ia.onrender.com
 
 ### Backend
 
@@ -170,7 +172,7 @@ O arquivo `render.yaml` cria a API e o site de uma vez:
 2. No Render, clique em **New → Blueprint** e escolha este repositório.
 3. Informe as variáveis que o Render pedir:
    - `DATABASE_URL`: a connection string do banco
-   - `GEMINI_API_KEY`: sua chave do Google AI Studio
+   - `GROQ_API_KEY`: sua chave do [Groq](https://console.groq.com) (plano gratuito)
    - `NEXT_PUBLIC_API_URL`: o endereço da API (ex.: `https://controle-gastos-ia-api.onrender.com`)
 4. As migrações do banco rodam sozinhas a cada deploy. A `JWT_SECRET` é gerada automaticamente.
 
