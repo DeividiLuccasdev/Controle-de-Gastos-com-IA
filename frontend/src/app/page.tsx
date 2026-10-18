@@ -54,6 +54,9 @@ export default function HomePage() {
   const [gastos, setGastos] =
     useState<Gasto[]>([]);
 
+  const [gastoSelecionado, setGastoSelecionado] =
+    useState<Gasto | null>(null);
+
   const [analiseAtual, setAnaliseAtual] =
     useState<AnaliseComprovante | null>(null);
 
@@ -75,6 +78,19 @@ export default function HomePage() {
   useEffect(() => {
     iniciarAplicacao();
   }, []);
+
+  useEffect(() => {
+    if (!gastoSelecionado) return;
+
+    function fecharComEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setGastoSelecionado(null);
+      }
+    }
+
+    window.addEventListener("keydown", fecharComEscape);
+    return () => window.removeEventListener("keydown", fecharComEscape);
+  }, [gastoSelecionado]);
 
   async function iniciarAplicacao() {
     const token = localStorage.getItem("token");
@@ -802,9 +818,12 @@ export default function HomePage() {
                   .slice(0, 10)
                   .map((gasto) => (
 
-                    <div
+                    <button
                       key={gasto.id}
-                      className="rounded-2xl border border-slate-200 p-4"
+                      type="button"
+                      onClick={() => setGastoSelecionado(gasto)}
+                      aria-label={`Ver detalhes do gasto em ${gasto.estabelecimento || "estabelecimento não identificado"}`}
+                      className="block w-full rounded-2xl border border-slate-200 p-4 text-left transition-colors hover:border-emerald-200 hover:bg-emerald-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500"
                     >
 
                       <div className="flex items-center justify-between gap-4">
@@ -841,7 +860,10 @@ export default function HomePage() {
 
                       </div>
 
-                    </div>
+                      <span className="mt-3 block text-right text-xs font-semibold text-emerald-700">
+                        Ver detalhes e itens →
+                      </span>
+                    </button>
 
                   ))}
 
@@ -854,6 +876,102 @@ export default function HomePage() {
         </section>
 
       </div>
+
+
+      {gastoSelecionado && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/60 sm:items-center sm:p-4">
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-detalhes-gasto"
+            className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-6 text-slate-900 shadow-2xl sm:rounded-3xl"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <h2 id="titulo-detalhes-gasto" className="text-xl font-bold">
+                Detalhes da compra
+              </h2>
+              <button
+                type="button"
+                onClick={() => setGastoSelecionado(null)}
+                aria-label="Fechar detalhes da compra"
+                className="rounded-full p-2 text-xl text-slate-500 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-3 rounded-2xl bg-slate-50 p-4">
+              <div>
+                <p className="text-xs text-slate-500">Estabelecimento</p>
+                <p className="font-semibold">
+                  {gastoSelecionado.estabelecimento || "Não identificado"}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-x-6 gap-y-3">
+                <div>
+                  <p className="text-xs text-slate-500">Data da compra</p>
+                  <p className="text-sm font-medium">
+                    {formatarData(gastoSelecionado.dataCompra)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Categoria</p>
+                  <p className="text-sm font-medium">
+                    {gastoSelecionado.categoria || "Sem categoria"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <h3 className="mt-6 font-bold">
+              Itens comprados ({gastoSelecionado.itens?.length ?? 0})
+            </h3>
+
+            {gastoSelecionado.itens?.length ? (
+              <ul className="mt-3 divide-y divide-slate-100 rounded-2xl border border-slate-200 px-4">
+                {gastoSelecionado.itens.map((item) => (
+                  <li key={item.id} className="py-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="break-words font-medium">{item.produto}</p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          {item.quantidade} × {formatarDinheiro(Number(item.valorUnitario))}
+                        </p>
+                      </div>
+                      <p className="shrink-0 font-semibold">
+                        {formatarDinheiro(
+                          item.valorTotal !== null
+                            ? Number(item.valorTotal)
+                            : Number(item.valorUnitario) * item.quantidade
+                        )}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">
+                Nenhum item foi identificado nesse comprovante.
+              </p>
+            )}
+
+            <div className="mt-6 flex items-center justify-between border-t border-slate-200 pt-4">
+              <span className="font-semibold">Total da compra</span>
+              <strong className="text-xl text-emerald-700">
+                {formatarDinheiro(Number(gastoSelecionado.total))}
+              </strong>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setGastoSelecionado(null)}
+              className="mt-6 w-full rounded-2xl bg-slate-900 px-5 py-3 font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500"
+            >
+              Fechar
+            </button>
+          </section>
+        </div>
+      )}
 
     </main>
   );
