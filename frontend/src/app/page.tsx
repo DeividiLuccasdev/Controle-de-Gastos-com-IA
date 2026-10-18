@@ -57,6 +57,9 @@ export default function HomePage() {
   const [gastoSelecionado, setGastoSelecionado] =
     useState<Gasto | null>(null);
 
+  const [excluindoGasto, setExcluindoGasto] = useState(false);
+  const [erroExclusao, setErroExclusao] = useState("");
+
   const [analiseAtual, setAnaliseAtual] =
     useState<AnaliseComprovante | null>(null);
 
@@ -83,14 +86,14 @@ export default function HomePage() {
     if (!gastoSelecionado) return;
 
     function fecharComEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !excluindoGasto) {
         setGastoSelecionado(null);
       }
     }
 
     window.addEventListener("keydown", fecharComEscape);
     return () => window.removeEventListener("keydown", fecharComEscape);
-  }, [gastoSelecionado]);
+  }, [gastoSelecionado, excluindoGasto]);
 
   async function iniciarAplicacao() {
     const token = localStorage.getItem("token");
@@ -440,6 +443,49 @@ export default function HomePage() {
     setImagemAtualUrl(null);
     setMensagem("");
     setErro("");
+  }
+
+  async function excluirGasto() {
+    const gasto = gastoSelecionado;
+    if (!gasto || excluindoGasto) return;
+
+    const confirmado = window.confirm(
+      `Deseja excluir o gasto de ${gasto.estabelecimento || "estabelecimento não identificado"} ` +
+      `no valor de ${formatarDinheiro(Number(gasto.total))}?\n\n` +
+      "Os produtos deste gasto também serão excluídos. Essa ação não pode ser desfeita."
+    );
+    if (!confirmado) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    try {
+      setExcluindoGasto(true);
+      setErroExclusao("");
+
+      const resposta = await fetch(`${API_URL}/gastos/${gasto.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const dados = await resposta.json().catch(() => ({}));
+      if (!resposta.ok) {
+        throw new Error(dados.mensagem || "Não foi possível excluir esse gasto.");
+      }
+
+      setGastos((anteriores) => anteriores.filter((item) => item.id !== gasto.id));
+      setGastoSelecionado(null);
+      setMensagem("✅ Gasto excluído com sucesso.");
+    } catch (error) {
+      setErroExclusao(
+        error instanceof Error ? error.message : "Erro ao excluir gasto."
+      );
+    } finally {
+      setExcluindoGasto(false);
+    }
   }
 
   const totalGasto =
@@ -821,7 +867,10 @@ export default function HomePage() {
                     <button
                       key={gasto.id}
                       type="button"
-                      onClick={() => setGastoSelecionado(gasto)}
+                      onClick={() => {
+                        setErroExclusao("");
+                        setGastoSelecionado(gasto);
+                      }}
                       aria-label={`Ver detalhes do gasto em ${gasto.estabelecimento || "estabelecimento não identificado"}`}
                       className="block w-full rounded-2xl border border-slate-200 p-4 text-left transition-colors hover:border-emerald-200 hover:bg-emerald-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500"
                     >
@@ -962,13 +1011,30 @@ export default function HomePage() {
               </strong>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setGastoSelecionado(null)}
-              className="mt-6 w-full rounded-2xl bg-slate-900 px-5 py-3 font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500"
-            >
-              Fechar
-            </button>
+            {erroExclusao && (
+              <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">
+                {erroExclusao}
+              </p>
+            )}
+
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={excluirGasto}
+                disabled={excluindoGasto}
+                className="flex-1 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {excluindoGasto ? "Excluindo..." : "🗑️ Excluir gasto"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setGastoSelecionado(null)}
+                disabled={excluindoGasto}
+                className="flex-1 rounded-2xl bg-slate-900 px-4 py-3 font-semibold text-white disabled:opacity-50"
+              >
+                Fechar
+              </button>
+            </div>
           </section>
         </div>
       )}

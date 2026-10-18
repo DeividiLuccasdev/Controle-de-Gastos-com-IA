@@ -85,6 +85,35 @@ router.get("/", autenticar, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Exclui apenas gastos do usuário autenticado.
+// O banco também exclui os ItemGasto associados (relação em cascata).
+router.delete("/:id", autenticar, async (req: AuthRequest, res: Response) => {
+  try {
+    const usuarioId = req.usuarioId;
+    if (!usuarioId) {
+      return res.status(401).json({ mensagem: "Usuário não autenticado." });
+    }
+
+    const gastoId = Number(req.params.id);
+    if (!Number.isSafeInteger(gastoId) || gastoId <= 0) {
+      return res.status(400).json({ mensagem: "Identificador do gasto inválido." });
+    }
+
+    const resultado = await prisma.gasto.deleteMany({
+      where: { id: gastoId, usuarioId }
+    });
+
+    if (resultado.count === 0) {
+      return res.status(404).json({ mensagem: "Gasto não encontrado." });
+    }
+
+    return res.json({ mensagem: "Gasto excluído com sucesso." });
+  } catch (error) {
+    console.error("ERRO AO EXCLUIR GASTO:", error);
+    return res.status(500).json({ mensagem: "Erro ao excluir gasto." });
+  }
+});
+
 router.post("/", autenticar, async (req: AuthRequest, res: Response) => {
   try {
     const usuarioId = req.usuarioId;
