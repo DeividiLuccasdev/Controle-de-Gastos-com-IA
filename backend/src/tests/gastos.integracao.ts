@@ -85,6 +85,12 @@ beforeEach(async () => {
   await prisma.$executeRawUnsafe(
     'TRUNCATE "ItemGasto", "Gasto", "Usuario" RESTART IDENTITY CASCADE'
   );
+
+  // Banco e pasta de uploads começam vazios em cada teste.
+  const uploads = process.env.UPLOADS_DIR!;
+  for (const pasta of fs.readdirSync(uploads)) {
+    fs.rmSync(`${uploads}/${pasta}`, { recursive: true, force: true });
+  }
 });
 
 after(async () => {
