@@ -2,7 +2,7 @@
 
 O arquivo [`render.yaml`](../render.yaml) é um Blueprint que cria a API e o site de uma vez:
 
-- `controle-gastos-ia-api`: serviço web Node.js 22 com raiz em `backend/`. O build roda `npm ci --include=dev && npm run build` e o start roda `npm run migrate && npm start`, então as migrações do banco rodam sozinhas a cada deploy. O health check usa `/`.
+- `controle-gastos-ia-api`: serviço web Node.js 22 com raiz em `backend/`. O build roda `npm ci --include=dev && npm run build` e o start roda `npm run migrate && npm run seed:demo && npm start`, então as migrações do banco rodam sozinhas a cada deploy e a conta de demonstração (`demo@example.com`) é criada ou restaurada. Se o serviço foi criado manualmente (sem o Blueprint), o Start Command no painel do Render precisa ser o mesmo. O health check usa `/`.
 - `controle-gastos-ia`: site estático com raiz em `frontend/`, publicado a partir de `out/` (export do Next.js), com rewrites para `/login` e `/cadastro`.
 
 ## Passo a passo

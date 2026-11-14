@@ -14,6 +14,10 @@
 
 [**Demo ao vivo**](https://controle-gastos-ia.onrender.com) · [Portfólio](https://portfolio-deividi.vercel.app/) · [GitHub](https://github.com/DeividiLuccasdev)
 
+**Acesso de demonstração:** e-mail `demo@example.com` · senha `Demo@2026`
+
+<sub>Se preferir, crie sua própria conta em <a href="https://controle-gastos-ia.onrender.com/cadastro">/cadastro</a>.</sub>
+
 <table>
   <tr>
     <td width="33%"><img src="screenshots/login.png" alt="Tela de login"></td>
@@ -189,6 +193,7 @@ render.yaml              # Blueprint do Render (API + site)
 - A leitura depende da qualidade da foto e do modelo; por isso os dados passam por revisão antes de salvar.
 - Não há rate limit nas rotas nem cota de análises por usuário.
 - O frontend não tem testes automatizados (o CI roda lint e build).
+- A conta de demonstração é compartilhada: outros visitantes podem incluir ou excluir gastos nela. A senha e o nome são restaurados a cada deploy, e os gastos de exemplo voltam se a conta ficar vazia.
 
 ## Roadmap
 

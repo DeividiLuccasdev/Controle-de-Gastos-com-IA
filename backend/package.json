@@ -9,7 +9,8 @@
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
     "build": "prisma generate --config prisma7.config.ts",
-    "migrate": "prisma migrate deploy --config prisma7.config.ts"
+    "migrate": "prisma migrate deploy --config prisma7.config.ts",
+    "seed:demo": "tsx src/scripts/seedDemo.ts"
   },
   "keywords": [],
   "author": "",
