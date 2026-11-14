@@ -1,154 +1,132 @@
-# 📸 Controle de Gastos com IA
+<div align="center">
 
-[![CI](https://github.com/DeividiLuccasdev/gasto-na-foto/actions/workflows/ci.yml/badge.svg)](https://github.com/DeividiLuccasdev/gasto-na-foto/actions/workflows/ci.yml)
+# Controle de Gastos com IA
 
-Aplicação Full Stack para controle de gastos por meio de fotografias de comprovantes e notas fiscais.
+**Registro de gastos a partir da foto do comprovante: a IA lê, o usuário confere e o gasto é salvo uma única vez.**
 
-O usuário fotografa um comprovante pelo celular ou seleciona uma imagem. O backend processa a imagem e utiliza Inteligência Artificial (modelo de visão Qwen, via Groq) para identificar automaticamente estabelecimento, data, valor total, categoria e itens da compra.
+[![CI](https://github.com/DeividiLuccasdev/Controle-de-Gastos-com-IA/actions/workflows/ci.yml/badge.svg)](https://github.com/DeividiLuccasdev/Controle-de-Gastos-com-IA/actions/workflows/ci.yml)
+![Node.js 22](https://img.shields.io/badge/node-22-339933?logo=node.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![Express 5](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-000000?logo=nextdotjs&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-2D3748?logo=prisma&logoColor=white)
 
-## 🌐 Aplicação Online
+[**Demo ao vivo**](https://controle-gastos-ia.onrender.com) · [Portfólio](https://portfolio-deividi.vercel.app/) · [GitHub](https://github.com/DeividiLuccasdev)
 
-[Acessar o Controle de Gastos com IA](https://controle-gastos-ia.onrender.com)
+<table>
+  <tr>
+    <td width="33%"><img src="screenshots/login.png" alt="Tela de login"></td>
+    <td width="33%"><img src="screenshots/dashboard.png" alt="Dashboard com histórico e total de gastos"></td>
+    <td width="33%"><img src="screenshots/analise-comprovante.png" alt="Análise do comprovante pela IA"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Login</sub></td>
+    <td align="center"><sub>Dashboard</sub></td>
+    <td align="center"><sub>Análise do comprovante com IA</sub></td>
+  </tr>
+</table>
 
-> ⏳ **O primeiro acesso pode demorar de 30 a 60 segundos.** A aplicação usa o plano gratuito do Render, que "adormece" o servidor após 15 minutos sem uso. Depois que ele acorda, tudo responde normalmente.
+</div>
 
-## 🚀 Funcionalidades
+> Projeto de estudo e portfólio. A demo roda no plano gratuito do Render, que "adormece" o servidor após 15 minutos sem uso: **o primeiro acesso pode demorar de 30 a 60 segundos**. Depois que ele acorda, tudo responde normalmente.
 
-- Cadastro e autenticação de usuários
-- Login com JWT
-- Upload de comprovantes
-- Captura de imagem pela câmera do celular
-- Tratamento de imagens com Sharp
-- Análise de comprovantes com IA (Qwen via Groq)
-- Extração automática de estabelecimento, data, total, categoria e produtos
-- Cadastro dos gastos no PostgreSQL
-- Histórico de gastos
-- Soma automática do total gasto
-- Interface responsiva
-- API REST entre frontend e backend
+## Sobre
 
-## 🧠 Inteligência Artificial
+Aplicação full stack para controle de gastos por fotografia de comprovantes e notas fiscais. O usuário fotografa o comprovante pelo celular (ou escolhe uma imagem), o backend trata a imagem e um modelo de visão (Qwen, via [Groq](https://groq.com)) devolve estabelecimento, data, valor total, categoria e itens em JSON estruturado.
 
-O sistema envia a imagem do comprovante a um modelo de visão (Qwen 3.8, pela API do [Groq](https://groq.com), compatível com a OpenAI) para interpretar imagens de comprovantes e retornar dados estruturados em JSON.
+O foco não está só na chamada à IA, mas no que costuma dar errado em volta dela: **duplo clique e reenvio, a mesma foto enviada duas vezes, a IA lenta ou fora do ar, falha no banco no meio do processo e arquivos que ficam para trás.** O projeto demonstra frontend, backend, API REST, autenticação, banco de dados, processamento de imagens e integração com IA.
 
-### Fluxo da aplicação
+## Funcionalidades
 
-```text
-Celular / Navegador
-        ↓
-Next.js / React
-        ↓
-API Node.js / Express
-        ↓
-Sharp
-        ↓
-Groq (Qwen 3.8 Vision)
-        ↓
-JSON estruturado
-        ↓
-Prisma ORM
-        ↓
-PostgreSQL
+| | |
+| --- | --- |
+| **Contas** | Cadastro e login com JWT (validade de 7 dias), senhas com bcrypt e e-mail normalizado. |
+| **Captura do comprovante** | Câmera do celular (`capture="environment"`) ou seleção de arquivo; JPEG, PNG ou WEBP de até 10 MB. |
+| **Tratamento da imagem** | O Sharp valida, corrige a rotação e converte para JPEG, removendo metadados como a localização GPS. |
+| **Análise com IA** | Modelo de visão Qwen pela API do Groq (compatível com a OpenAI), com resposta normalizada para números, datas e quantidades. |
+| **Revisão antes de salvar** | Os dados extraídos aparecem em um formulário editável; o usuário corrige, salva ou cancela. |
+| **Histórico e total** | Lista de gastos com itens, exclusão com confirmação e total calculado pelo banco (`GET /gastos/resumo`). |
+| **Interface responsiva** | Frontend em Next.js com Tailwind CSS, exportado como site estático. |
+
+## Arquitetura
+
+```mermaid
+flowchart LR
+    UI["Frontend<br/>Next.js · React<br/>(site estático)"] -->|REST + JWT| API["API<br/>Node.js · Express"]
+    API -->|validação e conversão| SHARP["Sharp"]
+    SHARP --> DISCO[("uploads/ por usuário<br/>JPEG")]
+    API -->|imagem em base64| IA["Groq<br/>Qwen (visão)"]
+    IA -->|JSON estruturado| API
+    API -->|Prisma ORM| PG[("PostgreSQL<br/>usuários · gastos · itens")]
+    LIMPEZA["Limpeza periódica"] -->|remove fotos sem gasto| DISCO
 ```
 
-## 🛠️ Tecnologias
+Fluxo de um comprovante: `POST /gastos/foto` salva a imagem tratada, `POST /gastos/analisar` devolve os dados extraídos para revisão e `POST /gastos` grava o gasto confirmado. Há também `POST /gastos/analisar-e-salvar`, que faz as duas últimas etapas de uma vez. → [rotas da API](docs/api.md)
 
-### Frontend
+## Decisões técnicas
 
-- Next.js
-- React
-- TypeScript
-- Tailwind CSS
-- HTML5
-- CSS3
+- **Idempotência garantida pelo banco, não por verificação prévia.** Um comprovante vira no máximo um gasto: há restrições únicas por usuário em `imagemUrl` e no hash SHA-256 do JPEG salvo. Duplo clique, reenvio ou a mesma foto enviada de novo caem na violação de unicidade (P2002) e devolvem o gasto existente (`200`, `duplicado: true`), inclusive com requisições simultâneas. Gastos manuais, sem imagem, ficam fora da restrição.
+- **Migração sem perda de dados.** A migração que criou essas restrições não apaga duplicados antigos: o gasto mais antigo mantém a imagem e os repetidos ficam sem `imagemUrl`, para o usuário revisar.
+- **Falhas não deixam arquivos órfãos.** Fotos que não viram gasto (IA falhou, total não identificado, erro no banco, análise cancelada) são apagadas, mas só se nenhum gasto as referencia. Uma limpeza ao iniciar e a cada 6 horas remove o que sobrar com mais de 24 horas e arquivos `.tmp` abandonados.
+- **Escrita atômica da imagem.** O arquivo é gravado como `.tmp` e renomeado, então um `.jpg` nunca fica pela metade se o processo cair no meio.
+- **Limites explícitos na chamada à IA.** Timeout de 30 s e uma nova tentativa, em vez dos padrões do SDK, que deixariam a requisição do usuário presa por muito mais tempo. Timeout vira `504`, resposta sem JSON aproveitável vira `502` e chave inválida ou limite de uso vira `503` com mensagem amigável.
+- **Erros internos só no log.** Um tradutor central converte exceções em status HTTP e mensagem segura; detalhes do banco, stack e resposta da IA ficam só no log do servidor.
+- **Exclusão idempotente e sem vazamento.** `DELETE /gastos/:id` responde `204` mesmo se o gasto já não existe ou pertence a outro usuário, sem revelar se ele existe. O registro é apagado antes do arquivo, para que uma falha no banco não deixe o gasto sem imagem.
+- **Comprovantes isolados por usuário.** Cada usuário tem a própria pasta em `uploads/` e só acessa e analisa os próprios comprovantes; o `imagemUrl` é validado por expressão regular (bloqueando tentativas como `/uploads/../.env`) e o download das imagens exige login.
+- **IA injetável nos testes.** O app é criado separado do `listen`, o que permite testá-lo com supertest e trocar a IA por um dublê, cobrindo falhas sem depender do provedor.
 
-### Backend
+## Stack
 
-- Node.js
-- Express
-- TypeScript
-- Prisma ORM
-- JWT
-- Multer
-- Sharp
+| Camada | Tecnologias |
+| --- | --- |
+| Frontend | Next.js 16 (export estático), React 19, TypeScript, Tailwind CSS 4 |
+| Backend | Node.js 22, Express 5, TypeScript, Multer, Sharp, JWT, bcrypt |
+| IA | Groq API com modelo de visão Qwen, via SDK `openai` |
+| Dados | PostgreSQL, Prisma ORM 7 (adapter `pg`) |
+| Testes | `node:test` (via tsx), supertest, PostgreSQL real |
+| Infra | GitHub Actions, Render (Blueprint em `render.yaml`) |
 
-### Inteligência Artificial
+## Como rodar
 
-- Groq API (modelo Qwen 3.8 com visão)
-- Google GenAI SDK
+Pré-requisitos: Node.js 22+, um PostgreSQL (local ou em Docker) e uma chave do [Groq](https://console.groq.com) (há plano gratuito).
 
-### Banco de Dados
+Um PostgreSQL em Docker compatível com o `.env.example`:
 
-- PostgreSQL
-- Docker
-
-### Ferramentas
-
-- Git
-- GitHub
-- VS Code
-- Docker Desktop
-
-## 📂 Estrutura
-
-```text
-controle-gastos-ia/
-├── backend/
-│   ├── prisma/
-│   └── src/
-│       ├── config/
-│       ├── middlewares/
-│       ├── routes/
-│       ├── services/
-│       └── server.ts
-│
-├── frontend/
-│   └── src/
-│       └── app/
-│           ├── login/
-│           ├── layout.tsx
-│           └── page.tsx
-│
-├── screenshots/
-├── .gitignore
-└── README.md
+```bash
+docker run -d --name gastos-db -e POSTGRES_USER=usuario -e POSTGRES_PASSWORD=senha \
+  -e POSTGRES_DB=controle_gastos_ia -p 5436:5432 postgres:16
 ```
-
-## 🔐 Variáveis de ambiente
-
-As chaves e credenciais reais não são armazenadas no GitHub.
-
-Exemplo:
-
-```env
-GROQ_API_KEY=sua_chave_groq
-DATABASE_URL=postgresql://usuario:senha@localhost:5436/controle_gastos_ia
-JWT_SECRET=seu_segredo_aqui
-PORT=3001
-```
-
-## ⚙️ Como executar
 
 ### Backend
 
 ```bash
 cd backend
 npm install
-npm run dev
+cp .env.example .env   # preencha as variáveis
+npm run build          # gera o cliente Prisma
+npm run migrate        # aplica as migrações
+npm run dev            # http://localhost:3001
 ```
 
-Backend:
+| Variável | Descrição |
+| --- | --- |
+| `DATABASE_URL` | Connection string do PostgreSQL |
+| `JWT_SECRET` | Segredo usado para assinar os tokens |
+| `GROQ_API_KEY` | Chave da API do Groq |
+| `GROQ_MODEL` | Opcional. Outro modelo de visão do Groq (padrão: `qwen/qwen3.8-27b`) |
+| `GROQ_BASE_URL` | Opcional. Endpoint compatível com a OpenAI (padrão: API do Groq) |
+| `UPLOADS_DIR` | Opcional. Pasta das imagens (padrão: `uploads`) |
+| `PORT` | Porta da API (padrão: `3001`) |
 
-```text
-http://localhost:3001
-```
+As chaves e credenciais reais não são armazenadas no GitHub.
 
 ### Frontend
 
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev            # http://localhost:3000
 ```
 
 Ou utilizando a exportação estática:
@@ -158,37 +136,13 @@ npm run build
 npx serve@latest out -l 3000
 ```
 
-Frontend:
+`NEXT_PUBLIC_API_URL` define o endereço da API no build. Sem ela, o frontend usa a porta 3001 do mesmo computador, o que permite testar no celular pela rede local. → [teste em celular](docs/teste-celular.md) · [publicação no Render](docs/deploy-render.md)
 
-```text
-http://localhost:3000
-```
-
-## ☁️ Publicando no Render
-
-O arquivo `render.yaml` cria a API e o site de uma vez:
-
-1. Crie um banco PostgreSQL (por exemplo, no [Neon](https://neon.tech)) e copie a connection string.
-2. No Render, clique em **New → Blueprint** e escolha este repositório.
-3. Informe as variáveis que o Render pedir:
-   - `DATABASE_URL`: a connection string do banco
-   - `GROQ_API_KEY`: sua chave do [Groq](https://console.groq.com) (plano gratuito)
-   - `NEXT_PUBLIC_API_URL`: o endereço da API (ex.: `https://controle-gastos-ia-api.onrender.com`)
-4. As migrações do banco rodam sozinhas a cada deploy. A `JWT_SECRET` é gerada automaticamente.
-
-Variáveis do frontend:
-
-| Variável | Descrição |
-|---|---|
-| `NEXT_PUBLIC_API_URL` | Endereço da API usado no build. Sem ela, o frontend usa a porta 3001 do mesmo computador (útil para testar no celular pela rede local) |
-
-> No plano gratuito, os arquivos enviados ficam no disco temporário do servidor: os dados dos gastos ficam salvos no banco, mas as imagens dos comprovantes são apagadas quando o servidor reinicia.
-
-## 🧪 Testes
+## Testes
 
 ```bash
 cd backend
-npm test
+npm test               # testes unitários
 ```
 
 Testes de integração (API + PostgreSQL real, IA simulada). Use um banco de teste: as tabelas são limpas a cada teste.
@@ -199,51 +153,51 @@ DATABASE_URL=postgresql://usuario:senha@localhost:5432/gastos_teste npm run migr
 DATABASE_URL=postgresql://usuario:senha@localhost:5432/gastos_teste npm run test:integracao
 ```
 
-Eles cobrem salvamentos simultâneos do mesmo comprovante (um só gasto), a mesma foto enviada duas vezes, falhas da IA e do banco (sem arquivo órfão e sem detalhes internos na resposta), cadastros simultâneos com o mesmo e-mail e exclusão repetida.
+São 23 testes: 7 unitários (normalização de números, quantidades e datas; validação do caminho das imagens) e 16 de integração. Os de integração cobrem salvamentos simultâneos do mesmo comprovante (um só gasto), a mesma foto enviada duas vezes, erro e timeout da IA, total não identificado, erro no banco (sem arquivo órfão e sem detalhes internos na resposta), cancelamento da análise, limpeza periódica, cadastros simultâneos com o mesmo e-mail, exclusão repetida, gasto de outro usuário e o resumo calculado no banco.
 
-## 🔁 Idempotência e falhas
+O CI (GitHub Actions) roda em cada push na `main` e em pull requests: no backend, gera o cliente Prisma, faz o typecheck, roda os testes unitários, aplica as migrações em um PostgreSQL 16 e roda os testes de integração; no frontend, roda o lint e o build.
 
-- Um comprovante vira no máximo um gasto: o banco tem restrições únicas por usuário na `imagemUrl` e no hash SHA-256 da imagem. Duplo clique, reenvio ou a mesma foto enviada de novo devolvem o gasto existente (`200`, `duplicado: true`).
-- Fotos que não viram gasto (IA falhou, total não identificado, erro no banco, análise cancelada) são apagadas; uma limpeza periódica remove as que sobrarem.
-- Excluir é idempotente (`204`), e o total exibido vem do banco (`GET /gastos/resumo`).
-- Erros internos ficam só no log do servidor; a resposta traz apenas uma mensagem amigável.
+## Estrutura
 
-## 🔐 Segurança dos comprovantes
+```text
+backend/
+├── prisma/
+│   ├── migrations/      # migrações SQL (inclui a de idempotência)
+│   └── schema.prisma
+└── src/
+    ├── config/          # Prisma, upload e gravação das imagens
+    ├── middlewares/     # autenticação JWT
+    ├── routes/          # auth, usuários, gastos e download de imagens
+    ├── services/        # análise com IA e limpeza de uploads
+    ├── utils/           # normalização de números e tradução de erros
+    ├── tests/           # testes de integração
+    ├── app.ts           # criação do app (testável)
+    └── server.ts        # listen e agendamento da limpeza
+frontend/
+└── src/
+    ├── app/             # páginas: dashboard, login e cadastro
+    └── lib/api.ts       # endereço da API
+docs/                    # API, publicação no Render e teste em celular
+screenshots/
+render.yaml              # Blueprint do Render (API + site)
+```
 
-- Só imagens de verdade são aceitas: o arquivo é validado e convertido para JPEG pelo Sharp, o que também remove metadados como a localização GPS.
-- Cada usuário tem a própria pasta em `uploads/` e só acessa e analisa os próprios comprovantes.
-- As imagens exigem login para serem baixadas.
+## Limitações conhecidas
 
-## 📱 Teste em celular
+- No plano gratuito do Render, as imagens ficam no disco temporário do servidor: os dados dos gastos ficam salvos no banco, mas as fotos dos comprovantes são apagadas quando o servidor reinicia.
+- O token JWT fica no `localStorage`; não há revogação de sessão nem recuperação de senha.
+- A leitura depende da qualidade da foto e do modelo; por isso os dados passam por revisão antes de salvar.
+- Não há rate limit nas rotas nem cota de análises por usuário.
+- O frontend não tem testes automatizados (o CI roda lint e build).
 
-O projeto foi testado em smartphone Android conectado à mesma rede do computador, permitindo fotografar comprovantes diretamente pelo aparelho.
+## Roadmap
 
-## 📸 Screenshots
+- [ ] Armazenamento das imagens fora do disco do servidor (object storage)
+- [ ] Rate limit e cota de análises por usuário
+- [ ] Filtros por período e categoria, com gráficos
+- [ ] Recuperação de senha
+- [ ] Testes de frontend
 
-### Login
+## Autor
 
-<img src="screenshots/login.png" width="300">
-
-### Dashboard
-
-<img src="screenshots/dashboard.png" width="300">
-
-### Análise do comprovante com IA
-
-<img src="screenshots/analise-comprovante.png" width="300">
-
-## 🎯 Objetivo
-
-Projeto desenvolvido para demonstrar conhecimentos em desenvolvimento Full Stack, incluindo frontend, backend, APIs REST, autenticação, banco de dados, processamento de imagens e integração com Inteligência Artificial.
-
-## 👨‍💻 Autor
-
-**Deividi Tiago Luccas**
-
-Desenvolvedor Full Stack
-
-GitHub: [DeividiLuccasdev](https://github.com/DeividiLuccasdev)
-
----
-
-Projeto desenvolvido para estudo, prática e portfólio profissional.
+**Deividi Tiago Luccas** · Desenvolvedor Full Stack · [Portfólio](https://portfolio-deividi.vercel.app/) · [GitHub](https://github.com/DeividiLuccasdev)
