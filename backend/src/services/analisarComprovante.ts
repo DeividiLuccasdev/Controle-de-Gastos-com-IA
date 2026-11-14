@@ -8,10 +8,21 @@ import {
   normalizarQuantidade
 } from "../utils/numeros";
 
-const ai = new OpenAI({
-  apiKey: process.env.GROQ_API_KEY,
-  baseURL: process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1"
-});
+// Cliente criado só no primeiro uso (o construtor falha sem a chave) e com
+// limites explícitos: os padrões do SDK (10 minutos e 2 novas tentativas)
+// deixariam a requisição do usuário presa por até ~30 minutos.
+let cliente: OpenAI | null = null;
+
+function clienteIA(): OpenAI {
+  cliente ??= new OpenAI({
+    apiKey: process.env.GROQ_API_KEY,
+    baseURL: process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1",
+    timeout: 30_000,
+    maxRetries: 1
+  });
+
+  return cliente;
+}
 
 // Modelo com suporte a imagens no Groq (pode ser trocado sem mexer no código)
 const MODELO_IA = process.env.GROQ_MODEL || "qwen/qwen3.8-27b";
@@ -20,6 +31,14 @@ const MODELO_IA = process.env.GROQ_MODEL || "qwen/qwen3.8-27b";
 // limite de uso atingido ou chave inválida): vira uma mensagem amigável.
 export class IAIndisponivel extends Error {}
 
+// A IA demorou demais para responder (vira 504).
+export class IATempoEsgotado extends Error {}
+
+// A IA respondeu, mas sem um JSON aproveitável (vira 502).
+export class IARespostaInvalida extends Error {}
+
+export type Analisador = (caminhoArquivo: string) => Promise<ResultadoComprovante>;
+
 type ItemExtraido = {
   produto: string;
   quantidade: number;
@@ -27,7 +46,7 @@ type ItemExtraido = {
   valorTotal: number;
 };
 
-type ResultadoComprovante = {
+export type ResultadoComprovante = {
   estabelecimento: string | null;
   dataCompra: string | null;
   total: number | null;
@@ -52,7 +71,11 @@ export async function analisarComprovante(
   caminhoArquivo: string
 ): Promise<ResultadoComprovante> {
   if (!process.env.GROQ_API_KEY) {
-    throw new Error("GROQ_API_KEY não configurada.");
+    console.error("GROQ_API_KEY não configurada.");
+
+    throw new IAIndisponivel(
+      "A análise por IA está temporariamente indisponível. Tente novamente em alguns minutos."
+    );
   }
 
   const arquivoOriginal = await fs.readFile(caminhoArquivo);
@@ -69,7 +92,7 @@ export async function analisarComprovante(
   let resposta;
 
   try {
-    resposta = await ai.responses.create({
+    resposta = await clienteIA().responses.create({
       model: MODELO_IA,
       input: [
         {
@@ -123,6 +146,12 @@ export async function analisarComprovante(
       ]
     });
   } catch (erro) {
+    if (erro instanceof OpenAI.APIConnectionTimeoutError) {
+      throw new IATempoEsgotado(
+        "A análise por IA demorou demais. Tente novamente."
+      );
+    }
+
     if (
       erro instanceof OpenAI.APIError &&
       (erro.status === 401 || erro.status === 403 || erro.status === 429)
@@ -142,10 +171,17 @@ export async function analisarComprovante(
   const texto = limparJson(resposta.output_text ?? "");
 
   if (!texto) {
-    throw new Error("A IA não retornou dados do comprovante.");
+    throw new IARespostaInvalida("A IA não retornou dados do comprovante.");
   }
 
-  const bruto = JSON.parse(texto) as Partial<ResultadoComprovante>;
+  let bruto: Partial<ResultadoComprovante>;
+
+  try {
+    bruto = JSON.parse(texto) as Partial<ResultadoComprovante>;
+  } catch {
+    console.error("Resposta da IA não é um JSON válido:", texto);
+    throw new IARespostaInvalida("A IA não retornou dados do comprovante.");
+  }
 
   return {
     estabelecimento: bruto.estabelecimento ?? null,

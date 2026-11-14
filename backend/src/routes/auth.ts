@@ -2,12 +2,14 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "../config/prisma";
+import { responderErro } from "../utils/erros";
+import { normalizarEmail } from "./usuarios";
 
 const router = Router();
 
 router.post("/login", async (req, res) => {
   try {
-    const { email, senha } = req.body;
+    const { email, senha } = req.body ?? {};
 
     if (!email || !senha) {
       return res.status(400).json({
@@ -15,10 +17,13 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const usuario = await prisma.usuario.findUnique({
+    // Sem diferenciar maiúsculas: contas antigas podem ter sido
+    // gravadas antes da normalização do e-mail.
+    const usuario = await prisma.usuario.findFirst({
       where: {
-        email: email
-      }
+        email: { equals: normalizarEmail(email), mode: "insensitive" }
+      },
+      orderBy: { id: "asc" }
     });
 
     if (!usuario) {
@@ -65,15 +70,7 @@ router.post("/login", async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("ERRO NO LOGIN:", error);
-
-    return res.status(500).json({
-      mensagem: "Erro interno ao realizar login.",
-      detalhe:
-        error instanceof Error
-          ? error.message
-          : String(error)
-    });
+    return responderErro(res, error, "ERRO NO LOGIN", "Erro interno ao realizar login.");
   }
 });
 
