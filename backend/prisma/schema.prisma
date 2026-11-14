@@ -27,6 +27,8 @@ model Gasto {
   categoria       String?
   dataCompra      DateTime?
   imagemUrl       String?
+  // SHA-256 do JPEG salvo: identifica a mesma foto enviada mais de uma vez
+  imagemHash      String?
   criadoEm        DateTime  @default(now())
   atualizadoEm    DateTime  @updatedAt
 
@@ -34,6 +36,12 @@ model Gasto {
   usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   itens ItemGasto[]
+
+  // Idempotência: um comprovante vira no máximo um gasto por usuário,
+  // mesmo com duplo clique ou requisições simultâneas.
+  // (Gastos manuais, sem imagem, têm NULL e não entram na restrição.)
+  @@unique([usuarioId, imagemUrl])
+  @@unique([usuarioId, imagemHash])
 }
 
 model ItemGasto {

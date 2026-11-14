@@ -191,6 +191,23 @@ cd backend
 npm test
 ```
 
+Testes de integração (API + PostgreSQL real, IA simulada). Use um banco de teste: as tabelas são limpas a cada teste.
+
+```bash
+cd backend
+DATABASE_URL=postgresql://usuario:senha@localhost:5432/gastos_teste npm run migrate
+DATABASE_URL=postgresql://usuario:senha@localhost:5432/gastos_teste npm run test:integracao
+```
+
+Eles cobrem salvamentos simultâneos do mesmo comprovante (um só gasto), a mesma foto enviada duas vezes, falhas da IA e do banco (sem arquivo órfão e sem detalhes internos na resposta), cadastros simultâneos com o mesmo e-mail e exclusão repetida.
+
+## 🔁 Idempotência e falhas
+
+- Um comprovante vira no máximo um gasto: o banco tem restrições únicas por usuário na `imagemUrl` e no hash SHA-256 da imagem. Duplo clique, reenvio ou a mesma foto enviada de novo devolvem o gasto existente (`200`, `duplicado: true`).
+- Fotos que não viram gasto (IA falhou, total não identificado, erro no banco, análise cancelada) são apagadas; uma limpeza periódica remove as que sobrarem.
+- Excluir é idempotente (`204`), e o total exibido vem do banco (`GET /gastos/resumo`).
+- Erros internos ficam só no log do servidor; a resposta traz apenas uma mensagem amigável.
+
 ## 🔐 Segurança dos comprovantes
 
 - Só imagens de verdade são aceitas: o arquivo é validado e convertido para JPEG pelo Sharp, o que também remove metadados como a localização GPS.

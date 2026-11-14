@@ -4,7 +4,8 @@ import path from "path";
 import multer from "multer";
 import sharp from "sharp";
 
-export const UPLOADS_DIR = path.resolve("uploads");
+// UPLOADS_DIR pode ser trocado por variável de ambiente (usado nos testes).
+export const UPLOADS_DIR = path.resolve(process.env.UPLOADS_DIR || "uploads");
 
 const TIPOS_PERMITIDOS = [
   "image/jpeg",
@@ -30,12 +31,34 @@ export const upload = multer({
 
 export class ImagemInvalidaError extends Error {}
 
+export function hashDoConteudo(conteudo: Buffer): string {
+  return crypto.createHash("sha256").update(conteudo).digest("hex");
+}
+
+// Hash SHA-256 do JPEG salvo. Lança ImagemInvalidaError se o arquivo
+// não existir mais (ex.: removido entre a validação e a leitura).
+export async function hashDaImagem(caminho: string): Promise<string> {
+  try {
+    return hashDoConteudo(await fs.readFile(caminho));
+  } catch (erro) {
+    if ((erro as NodeJS.ErrnoException)?.code === "ENOENT") {
+      throw new ImagemInvalidaError("Imagem inválida.");
+    }
+
+    throw erro;
+  }
+}
+
 // Converte a imagem para JPEG (removendo metadados como a localização GPS)
-// e salva na pasta do usuário. Retorna o imagemUrl usado pela API.
+// e salva na pasta do usuário. Retorna o imagemUrl usado pela API e o hash
+// do JPEG gerado (a mesma foto gera sempre o mesmo hash).
+//
+// A escrita é atômica: grava em "<uuid>.jpg.tmp" e renomeia, assim um
+// arquivo .jpg nunca fica pela metade se o processo cair no meio.
 export async function salvarImagem(
   conteudo: Buffer,
   usuarioId: number
-): Promise<string> {
+): Promise<{ imagemUrl: string; imagemHash: string }> {
   let jpeg: Buffer;
 
   try {
@@ -49,11 +72,32 @@ export async function salvarImagem(
 
   const pasta = path.join(UPLOADS_DIR, String(usuarioId));
   const nomeArquivo = `${crypto.randomUUID()}.jpg`;
+  const destino = path.join(pasta, nomeArquivo);
+  const temporario = `${destino}.tmp`;
 
   await fs.mkdir(pasta, { recursive: true });
-  await fs.writeFile(path.join(pasta, nomeArquivo), jpeg);
 
-  return `/uploads/${usuarioId}/${nomeArquivo}`;
+  try {
+    await fs.writeFile(temporario, jpeg);
+    await fs.rename(temporario, destino);
+  } catch (erro) {
+    await fs.rm(temporario, { force: true });
+    throw erro;
+  }
+
+  return {
+    imagemUrl: `/uploads/${usuarioId}/${nomeArquivo}`,
+    imagemHash: hashDoConteudo(jpeg)
+  };
+}
+
+// Remove o arquivo; não falha se ele já não existir.
+export async function removerArquivo(caminho: string): Promise<void> {
+  try {
+    await fs.rm(caminho, { force: true });
+  } catch (erro) {
+    console.error("Não foi possível remover o arquivo:", caminho, erro);
+  }
 }
 
 const FORMATO_IMAGEM_URL =

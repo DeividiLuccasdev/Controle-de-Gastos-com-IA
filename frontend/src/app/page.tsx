@@ -45,14 +45,26 @@ type Gasto = {
 };
 
 
+function irParaLogin() {
+  window.location.assign("/login");
+}
+
 export default function HomePage() {
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Trava síncrona contra duplo clique: o estado "processando" só é
+  // aplicado no próximo render, tarde demais para um segundo clique rápido.
+  const salvandoRef = useRef(false);
 
   const [usuario, setUsuario] =
     useState<Usuario | null>(null);
 
   const [gastos, setGastos] =
     useState<Gasto[]>([]);
+
+  // Total calculado pelo servidor (GET /gastos/resumo).
+  const [totalGasto, setTotalGasto] =
+    useState(0);
 
   const [gastoSelecionado, setGastoSelecionado] =
     useState<Gasto | null>(null);
@@ -79,10 +91,6 @@ export default function HomePage() {
     useState("");
 
   useEffect(() => {
-    iniciarAplicacao();
-  }, []);
-
-  useEffect(() => {
     if (!gastoSelecionado) return;
 
     function fecharComEscape(event: KeyboardEvent) {
@@ -101,7 +109,7 @@ export default function HomePage() {
       localStorage.getItem("usuario");
 
     if (!token) {
-      window.location.href = "/login";
+      irParaLogin();
       return;
     }
 
@@ -127,25 +135,25 @@ export default function HomePage() {
         localStorage.getItem("token");
 
       if (!tokenAtual) {
-        window.location.href = "/login";
+        irParaLogin();
         return;
       }
 
-      const resposta = await fetch(
-        `${API_URL}/gastos`,
-        {
-          headers: {
-            Authorization:
-              `Bearer ${tokenAtual}`
-          }
-        }
-      );
+      const headers = {
+        Authorization:
+          `Bearer ${tokenAtual}`
+      };
 
-      if (resposta.status === 401) {
+      const [resposta, respostaResumo] = await Promise.all([
+        fetch(`${API_URL}/gastos`, { headers }),
+        fetch(`${API_URL}/gastos/resumo`, { headers })
+      ]);
+
+      if (resposta.status === 401 || respostaResumo.status === 401) {
         localStorage.removeItem("token");
         localStorage.removeItem("usuario");
 
-        window.location.href = "/login";
+        irParaLogin();
         return;
       }
 
@@ -158,7 +166,17 @@ export default function HomePage() {
         );
       }
 
+      const resumo = await respostaResumo.json();
+
+      if (!respostaResumo.ok) {
+        throw new Error(
+          resumo.mensagem ||
+          "Erro ao buscar o total gasto."
+        );
+      }
+
       setGastos(dados);
+      setTotalGasto(Number(resumo.total));
       setErro("");
 
     } catch (error) {
@@ -173,11 +191,19 @@ export default function HomePage() {
     }
   }
 
+  // Declarado depois das funções que usa (regra do React Compiler).
+  useEffect(() => {
+    // Carga inicial: lê a sessão do localStorage e busca os dados na API.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    iniciarAplicacao();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function sair() {
     localStorage.removeItem("token");
     localStorage.removeItem("usuario");
 
-    window.location.href = "/login";
+    irParaLogin();
   }
 
   function abrirCamera() {
@@ -219,7 +245,7 @@ export default function HomePage() {
         localStorage.getItem("token");
 
       if (!token) {
-        window.location.href = "/login";
+        irParaLogin();
         return;
       }
 
@@ -304,7 +330,6 @@ export default function HomePage() {
 
       if (!respostaAnalise.ok) {
         throw new Error(
-          resultado.detalhe ||
           resultado.mensagem ||
           "Erro ao analisar comprovante."
         );
@@ -338,6 +363,10 @@ export default function HomePage() {
   }
 
   async function salvarAnalise() {
+    if (salvandoRef.current) {
+      return;
+    }
+
     try {
       if (
         !analiseAtual ||
@@ -360,10 +389,11 @@ export default function HomePage() {
         localStorage.getItem("token");
 
       if (!token) {
-        window.location.href = "/login";
+        irParaLogin();
         return;
       }
 
+      salvandoRef.current = true;
       setProcessando(true);
       setErro("");
 
@@ -420,8 +450,12 @@ export default function HomePage() {
       setAnaliseAtual(null);
       setImagemAtualUrl(null);
 
+      // 200 + duplicado: o servidor já tinha esse comprovante salvo
+      // (ex.: reenvio após falha de rede) e devolveu o gasto existente.
       setMensagem(
-        "✅ Gasto salvo com sucesso!"
+        dados.duplicado
+          ? "ℹ️ Este comprovante já estava salvo."
+          : "✅ Gasto salvo com sucesso!"
       );
 
       await carregarGastos(token);
@@ -434,11 +468,27 @@ export default function HomePage() {
       );
 
     } finally {
+      salvandoRef.current = false;
       setProcessando(false);
     }
   }
 
   function cancelarAnalise() {
+    const token = localStorage.getItem("token");
+
+    // Descarta no servidor a foto que não virou gasto (melhor esforço:
+    // se falhar, a limpeza periódica do backend remove depois).
+    if (token && imagemAtualUrl) {
+      fetch(`${API_URL}/gastos/foto`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ imagemUrl: imagemAtualUrl })
+      }).catch(() => {});
+    }
+
     setAnaliseAtual(null);
     setImagemAtualUrl(null);
     setMensagem("");
@@ -458,7 +508,7 @@ export default function HomePage() {
 
     const token = localStorage.getItem("token");
     if (!token) {
-      window.location.href = "/login";
+      irParaLogin();
       return;
     }
 
@@ -471,14 +521,18 @@ export default function HomePage() {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      const dados = await resposta.json().catch(() => ({}));
+      // A exclusão é idempotente no servidor: repetir a requisição
+      // (ex.: após uma falha de rede) responde 204 em vez de erro.
       if (!resposta.ok) {
+        const dados = await resposta.json().catch(() => ({}));
         throw new Error(dados.mensagem || "Não foi possível excluir esse gasto.");
       }
 
-      setGastos((anteriores) => anteriores.filter((item) => item.id !== gasto.id));
       setGastoSelecionado(null);
       setMensagem("✅ Gasto excluído com sucesso.");
+
+      // Recarrega lista e total do servidor em vez de recalcular localmente.
+      await carregarGastos(token);
     } catch (error) {
       setErroExclusao(
         error instanceof Error ? error.message : "Erro ao excluir gasto."
@@ -487,14 +541,6 @@ export default function HomePage() {
       setExcluindoGasto(false);
     }
   }
-
-  const totalGasto =
-    gastos.reduce(
-      (soma, gasto) =>
-        soma +
-        Number(gasto.total),
-      0
-    );
 
   function formatarDinheiro(
     valor: number
